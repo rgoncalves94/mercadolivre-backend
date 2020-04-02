@@ -35,7 +35,9 @@ async function detail(idProduct) {
         descriptionProduct(sanitizedId)
     ])
 
-    return _transformDetailResponse(detail, description)
+    const category = await getProductCategory(detail.category_id)
+
+    return _transformDetailResponse(detail, description, category.path_from_root.map(path => path.name))
 }
 
 /**
@@ -67,6 +69,16 @@ function reduceCategories(acc, next) {
 }
 
 /**
+ * Reduce values of field path_from_root
+ * @param {array} acc 
+ * @param {object} category 
+ */
+function reducePathFromRoot(acc, category) {
+    acc.push(...category.path_from_root.map(path => path.name))
+    return acc
+}
+
+/**
  * Transform search response to frontend
  * @param {object} payload 
  */
@@ -76,10 +88,7 @@ function _transformSearchResponse(payload, categories) {
             "name": 'Vendedor',
             "lastname": 'Mercado Livre',
         },
-        "categories": categories.reduce((acc, category) => {
-            acc.push(...category.path_from_root.map(path => path.name))
-            return acc
-        }, []),
+        "categories": categories.reduce(reducePathFromRoot, []),
         "items": payload.results.map(result => {
             const [amount, decimals] = splitAmountAndDecimals(result.price)
             return {
@@ -103,7 +112,7 @@ function _transformSearchResponse(payload, categories) {
  * @param {object} detailPayload 
  * @param {object} descriptionPayload
  */
-function _transformDetailResponse(detailPayload, descriptionPayload) {
+function _transformDetailResponse(detailPayload, descriptionPayload, categories) {
     const [amount, decimals] = splitAmountAndDecimals(detailPayload.price)
     const getFirstPicture = (pictures = []) => pictures.length ? pictures[0].url : null
 
@@ -115,6 +124,7 @@ function _transformDetailResponse(detailPayload, descriptionPayload) {
         "item": {
             "id": detailPayload.id,
             "title": detailPayload.title,
+            "categories": categories,
             "price": {
                 "currency": detailPayload.currency_id,
                 "amount": parseInt(amount),
