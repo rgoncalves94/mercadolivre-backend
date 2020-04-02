@@ -8,7 +8,7 @@ const { MercadoLivreError, StandardError } = require('../../errors')
  * @return {object}
  */
 async function searchProducts(term) {
-   return _callGetAPI(`${MERCADOLIVRE_API_BASEURL}/sites/MLA/search?q=${term}`)
+   return _callGetAPI(`${MERCADOLIVRE_API_BASEURL}/sites/MLB/search?q=${term}`)
 }
 
 /**
@@ -30,6 +30,15 @@ function descriptionProduct(idProduct) {
 }
 
 /**
+ * Call Meli's categories API
+ * @param {*} URL 
+ */
+function getProductCategory(category) {
+    return _callGetAPI(`${MERCADOLIVRE_API_BASEURL}/categories/${category}`)
+    
+}
+
+/**
  * Call GET APis
  * @param {string} URL
  * @return {object}
@@ -47,4 +56,4 @@ async function _callGetAPI(URL) {
         throw new StandardError(500, "Internal Server Error")
     }
 }
-module.exports = { searchProducts, detailProduct, descriptionProduct }
+module.exports = { searchProducts, detailProduct, descriptionProduct, getProductCategory }
