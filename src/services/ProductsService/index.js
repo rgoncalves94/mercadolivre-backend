@@ -1,5 +1,5 @@
 const { StandardError } = require("../../errors")
-const { searchProducts, detailProduct, descriptionProduct } = require("../MercadoLivreProductsClientService")
+const { searchProducts, detailProduct, descriptionProduct, getProductCategory } = require("../MercadoLivreProductsClientService")
 const { splitAmountAndDecimalsWithPrecision } = require("../../utils")
 const splitAmountAndDecimals = splitAmountAndDecimalsWithPrecision(2)
 
@@ -11,7 +11,13 @@ async function search(term) {
     if(!term)
         throw new StandardError(400, "Invalid Term")
 
-    return _transformSearchResponse(await searchProducts(_sanitizeTerm(term)))
+    const list = await searchProducts(_sanitizeTerm(term))
+
+    const idCategories = list.results.reduce(reduceCategories, [])
+
+    const categories = await Promise.all(idCategories.map(item => getProductCategory(item)))
+
+    return _transformSearchResponse(list, categories)
 }
 
 /**
@@ -24,7 +30,12 @@ async function detail(idProduct) {
 
     const sanitizedId = _sanitizeId(idProduct);
 
-    return _transformDetailResponse(await detailProduct(sanitizedId), await descriptionProduct(sanitizedId))
+    const [detail, description] = await Promise.all([
+        detailProduct(sanitizedId),
+        descriptionProduct(sanitizedId)
+    ])
+
+    return _transformDetailResponse(detail, description)
 }
 
 /**
@@ -44,16 +55,31 @@ function _sanitizeId(id) {
 }
 
 /**
+ * Reduce categories from the product list
+ * @param {array} acc acumulator 
+ * @param {object} next next object of array
+ */
+function reduceCategories(acc, next) {
+    if(!acc.some(item => item === next.category_id))
+        acc.push(next.category_id)
+        
+    return acc
+}
+
+/**
  * Transform search response to frontend
  * @param {object} payload 
  */
-function _transformSearchResponse(payload) {
+function _transformSearchResponse(payload, categories) {
     return {
         "author": {
             "name": 'Vendedor',
             "lastname": 'Mercado Livre',
         },
-        "categories": payload.results.map(result => result.category_id),
+        "categories": categories.reduce((acc, category) => {
+            acc.push(...category.path_from_root.map(path => path.name))
+            return acc
+        }, []),
         "items": payload.results.map(result => {
             const [amount, decimals] = splitAmountAndDecimals(result.price)
             return {
