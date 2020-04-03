@@ -53,7 +53,8 @@ async function _callGetAPI(URL) {
         
         return data;
     } catch(error) {
-        throw new StandardError(500, "Internal Server Error")
+        console.error(error)
+        throw new StandardError(500, "Internal Server Error - MELI API")
     }
 }
 module.exports = { searchProducts, detailProduct, descriptionProduct, getProductCategory }
