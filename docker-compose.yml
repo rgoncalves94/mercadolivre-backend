@@ -1,0 +1,15 @@
+version: '3.3'
+
+networks: 
+  mercadolivre:
+
+services:
+  mercadolivre-backend:
+    image: rgoncalves94/mercadolivre-backend:latest
+    environment:
+      - SERVER_PORT=4000
+      - MERCADOLIVRE_API_BASEURL=https://api.mercadolibre.com
+    ports:
+      - 4000:4000
+    networks:
+      - mercadolivre
